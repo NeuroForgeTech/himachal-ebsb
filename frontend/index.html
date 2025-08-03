@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Himachal EBSB Control</title>
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron&display=swap" rel="stylesheet">
+  <style>
+    /* === DARK THEME === */
+    :root {
+      --bg-dark: #121212;
+      --card-bg: #1E1E2E;
+      --accent-blue: #2962FF;
+      --accent-light: #448AFF;
+      --text-primary: #E0E0E0;
+      --text-secondary: #B0B0B0;
+      --alert-red: #FF5252;
+      --success-green: #69F0AE;
+    }
+    
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background-color: var(--bg-dark);
+      color: var(--text-primary);
+      margin: 0;
+      padding: 20px;
+      min-height: 100vh;
+      position: relative;
+      padding-bottom: 30px;
+    }
+    
+    h1 {
+      color: var(--accent-blue);
+      text-align: center;
+      margin-bottom: 30px;
+      font-weight: 600;
+      text-shadow: 0 0 10px rgba(41, 98, 255, 0.3);
+    }
+    
+    .test-controls {
+      text-align: center;
+      margin-bottom: 20px;
+    }
+    
+    #test-btn {
+      background: linear-gradient(135deg, #FF5722, #FF9800);
+      padding: 12px 25px;
+      font-size: 1.1rem;
+      border-radius: 8px;
+      box-shadow: 0 0 15px rgba(255, 87, 34, 0.5);
+      border: none;
+      color: white;
+      font-weight: bold;
+      cursor: pointer;
+      transition: all 0.3s ease;
+    }
+    
+    #test-btn:hover {
+      box-shadow: 0 0 20px rgba(255, 87, 34, 0.8);
+      transform: translateY(-2px);
+    }
+    
+    .test-active {
+      animation: testPulse 1.5s infinite;
+    }
+    
+    @keyframes testPulse {
+      0% { box-shadow: 0 0 15px rgba(255, 87, 34, 0.5); }
+      50% { box-shadow: 0 0 25px rgba(255, 87, 34, 0.9); }
+      100% { box-shadow: 0 0 15px rgba(255, 87, 34, 0.5); }
+    }
+    
+    .card {
+      background: var(--card-bg);
+      border-radius: 12px;
+      box-shadow: 0 8px 16px rgba(0, 0, 0, 0.3);
+      padding: 25px;
+      margin-bottom: 25px;
+      border-left: 4px solid var(--accent-blue);
+      transition: transform 0.3s ease;
+    }
+    
+    .card:hover {
+      transform: translateY(-5px);
+    }
+    
+    h2 {
+      color: var(--accent-light);
+      margin-top: 0;
+      font-size: 1.4rem;
+      border-bottom: 1px solid #333;
+      padding-bottom: 10px;
+    }
+    
+    .alert {
+      color: var(--alert-red);
+      font-weight: bold;
+      background: rgba(255, 82, 82, 0.1);
+      padding: 10px;
+      border-radius: 6px;
+      display: inline-block;
+      margin-top: 10px;
+      animation: pulse 2s infinite;
+    }
+    
+    @keyframes pulse {
+      0% { opacity: 0.8; }
+      50% { opacity: 1; }
+      100% { opacity: 0.8; }
+    }
+    
+    button {
+      background: linear-gradient(135deg, var(--accent-blue), var(--accent-light));
+      color: white;
+      border: none;
+      padding: 12px 20px;
+      border-radius: 8px;
+      cursor: pointer;
+      margin: 5px;
+      font-weight: 600;
+      transition: all 0.3s ease;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    }
+    
+    button:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 12px rgba(41, 98, 255, 0.3);
+    }
+    
+    button:active {
+      transform: translateY(0);
+    }
+    
+    #status {
+      font-weight: bold;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+    
+    .connected {
+      color: var(--success-green);
+      text-shadow: 0 0 8px rgba(105, 240, 174, 0.6);
+    }
+    
+    .disconnected {
+      color: var(--alert-red);
+    }
+    
+    input[type="range"] {
+      width: 100%;
+      height: 8px;
+      -webkit-appearance: none;
+      background: linear-gradient(90deg, #2962FF, #448AFF);
+      border-radius: 10px;
+      margin: 15px 0;
+    }
+    
+    input[type="range"]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      width: 20px;
+      height: 20px;
+      background: white;
+      border-radius: 50%;
+      box-shadow: 0 0 5px rgba(0,0,0,0.3);
+    }
+    
+    .sun-tracker {
+      background: rgba(41, 98, 255, 0.1);
+      padding: 15px;
+      border-radius: 10px;
+      margin-top: 15px;
+    }
+    
+    @media (min-width: 768px) {
+      .dashboard-grid {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 20px;
+      }
+    }
+    
+    .attribution {
+      position: fixed;
+      bottom: 10px;
+      right: 10px;
+      font-size: 11px;
+      color: #c4c4c4;
+      opacity: 0.7;
+      font-family: 'Orbitron', sans-serif;
+    }
+  </style>
+</head>
+<body>
+  <h1>🏔️ HIMACHAL EBSB CONTROL CENTER</h1>
+  
+  <div class="dashboard-grid">
+    <!-- ESP32 Connection Status -->
+    <div class="card">
+      <h2>🔌 DEVICE STATUS</h2>
+      <p>ESP32: <span id="esp32-status" class="disconnected">DISCONNECTED</span></p>
+      <p>Mega 2560: <span id="mega-status" class="disconnected">DISCONNECTED</span></p>
+    </div>
+
+    <!-- Landslide Monitor -->
+    <div class="card">
+      <h2>🌋 LANDSLIDE MONITOR</h2>
+      <p>Tilt Angle: <span id="tilt-value">0</span>°</p>
+      <div id="alert-box" class="alert" style="display: none;">
+        🚨 LANDSLIDE DETECTED! EVACUATE!
+      </div>
+    </div>
+
+    <!-- Solar Power -->
+    <div class="card">
+      <h2>☀️ SOLAR POWER</h2>
+      <p>Voltage Output: <span id="solar-voltage">0.0</span>V</p>
+      <p>Sun Position: <span id="sun-position">--</span></p>
+      <div class="sun-tracker">
+        <div style="display: flex; justify-content: space-between; width: 100%; color: var(--text-secondary);">
+          <span>East</span>
+          <span>Noon</span>
+          <span>West</span>
+        </div>
+        <input type="range" id="sun-slider" min="0" max="180" value="90" disabled>
+      </div>
+    </div>
+
+    <!-- Ropeway Control -->
+    <div class="card">
+      <h2>🚡 ROPEWAY MANAGEMENT</h2>
+      <div class="ropeway-controls">
+        <button id="auto-btn">AUTO MODE</button>
+        <button id="manual-btn">MANUAL MODE</button>
+        <div id="manual-controls" style="display: none; margin-top: 15px;">
+          <button id="station1-btn">GO TO STATION 1</button>
+          <button id="station2-btn">GO TO STATION 2</button>
+        </div>
+      </div>
+      <p>Current Status: <span id="ropeway-status">IDLE</span></p>
+    </div>
+  </div>
+
+  <div class="attribution">NeuroForgeTechspert Tech Works@2025</div>
+
+<script>
+  const tiltValue = document.getElementById('tilt-value');
+  const alertBox = document.getElementById('alert-box');
+  const solarVoltage = document.getElementById('solar-voltage');
+  const sunPosition = document.getElementById('sun-position');
+  const sunSlider = document.getElementById('sun-slider');
+  const ropewayStatus = document.getElementById('ropeway-status');
+  const espStatus = document.getElementById('esp32-status');
+  const megaStatus = document.getElementById('mega-status');
+
+  const fetchStatus = async () => {
+    try {
+      const res = await fetch("http://localhost:5000/get_status");
+      const data = await res.json();
+
+      tiltValue.textContent = data.tilt_angle;
+      if (data.landslide) {
+        alertBox.style.display = 'block';
+      } else {
+        alertBox.style.display = 'none';
+      }
+
+      solarVoltage.textContent = data.solar_voltage.toFixed(1);
+      sunPosition.textContent = data.sun_position;
+      sunSlider.value = data.servo_value;
+
+      ropewayStatus.textContent = data.ropeway_status;
+      espStatus.textContent = data.esp32 === "connected" ? "CONNECTED" : "DISCONNECTED";
+      espStatus.className = data.esp32 === "connected" ? "connected" : "disconnected";
+      megaStatus.textContent = data.mega === "connected" ? "CONNECTED" : "DISCONNECTED";
+      megaStatus.className = data.mega === "connected" ? "connected" : "disconnected";
+      
+    } catch (err) {
+      console.error("Connection to backend failed.", err);
+      espStatus.textContent = "DISCONNECTED";
+      espStatus.className = "disconnected";
+      megaStatus.textContent = "DISCONNECTED";
+      megaStatus.className = "disconnected";
+    }
+  };
+
+  setInterval(fetchStatus, 1000); // Refresh every 1 second
+</script>
+</body>
+</html>

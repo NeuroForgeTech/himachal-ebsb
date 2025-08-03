@@ -1,0 +1,11 @@
+services:
+  - type: web
+    name: himachal-ebsb-dashboard
+    env: python
+    plan: free
+    buildCommand: pip install -r backend/requirements.txt
+    startCommand: python backend/app.py
+    envVars:
+      - key: PORT
+        value: 5000
+    autoDeploy: true
