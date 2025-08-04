@@ -1,47 +1,34 @@
-from flask import Flask, request, jsonify, send_from_directory
+from flask import Flask, request, jsonify, render_template
 import os
 
-app = Flask(__name__, static_folder='../frontend')
+app = Flask(__name__)
 
-# In-memory store (for demo; not persistent)
-latest_data = {}
-latest_command = {"ropeway_mode": "manual", "servo_angle": 90}
+# In-memory message store (optional)
+messages = {"esp32": "", "web": ""}
 
-# Serve frontend/index.html
-@app.route('/')
-def serve_frontend():
-    return send_from_directory(app.static_folder, 'index.html')
+@app.route("/")
+def index():
+    return render_template("index.html")
 
-# ESP32 sends data to this route
-@app.route('/upload', methods=['POST'])
-def upload_data():
-    global latest_data
-    latest_data = request.get_json()
-    print("[ESP32] Uploaded data:", latest_data)
-    return jsonify({"status": "success"})
+@app.route("/send", methods=["POST"])
+def send_message():
+    data = request.json
+    source = data.get("source")
+    content = data.get("message")
 
-# Dashboard polls latest ESP32 data
-@app.route('/data', methods=['GET'])
-def get_data():
-    return jsonify(latest_data)
+    if source in messages:
+        messages[source] = content
+        return jsonify({"status": "success"}), 200
+    else:
+        return jsonify({"error": "invalid source"}), 400
 
-# ESP32 asks for latest control command
-@app.route('/command', methods=['GET'])
-def get_command():
-    return jsonify(latest_command)
+@app.route("/receive/<target>", methods=["GET"])
+def receive_message(target):
+    if target in messages:
+        return jsonify({"message": messages[target]}), 200
+    else:
+        return jsonify({"error": "invalid target"}), 400
 
-# Dashboard sets new control command for ESP32
-@app.route('/set-command', methods=['POST'])
-def set_command():
-    global latest_command
-    latest_command = request.get_json()
-    print("[Dashboard] Updated command:", latest_command)
-    return jsonify({"status": "updated"})
-
-# Required for Render health checks (optional but recommended)
-@app.route('/healthz')
-def health_check():
-    return "OK", 200
-
-if __name__ == '__main__':
-    app.run(debug=True)
+if __name__ == "__main__":
+    port = int(os.environ.get("PORT", 10000))  # <-- critical for Render
+    app.run(host="0.0.0.0", port=port, debug=True)
