@@ -1,58 +1,56 @@
-from flask import Flask, send_from_directory, jsonify
-import serial
-import threading
-import time
+from flask import Flask, request, jsonify, send_from_directory
+from flask_cors import CORS
 import os
 
-app = Flask(__name__, static_folder='../frontend', static_url_path='')
+app = Flask(__name__, static_folder='../frontend')
+CORS(app)  # Allow frontend JS to call API
 
-# === SERIAL PORT SETUP ===
-ser = None
-serial_data = {
-    'landslide_status': None,
-    'tilt_angle': None,
-    'voltage': None,
-    'servo_angle': None,
-    'ropeway_mode': None,
-    'ropeway_position': None
+# Store latest ESP32 data
+esp_data = {
+    "landslide": "Unknown",
+    "solar_voltage": 0.0,
+    "servo_angle": 0,
+    "timestamp": None
 }
 
-def read_serial_data():
-    global ser, serial_data
-    try:
-        ser = serial.Serial('COM4', 9600, timeout=1)
-        time.sleep(2)  # wait for serial to initialize
-        while True:
-            if ser.in_waiting:
-                line = ser.readline().decode('utf-8').strip()
-                if line.startswith("DATA:"):
-                    payload = line[5:].split(',')
-                    if len(payload) == 6:
-                        serial_data['landslide_status'] = payload[0]
-                        serial_data['tilt_angle'] = payload[1]
-                        serial_data['voltage'] = payload[2]
-                        serial_data['servo_angle'] = payload[3]
-                        serial_data['ropeway_mode'] = payload[4]
-                        serial_data['ropeway_position'] = payload[5]
-    except Exception as e:
-        print(f"Serial error: {e}")
+# Store dashboard control commands
+command_state = {
+    "ropeway_mode": "AUTO",  # Can be AUTO or MANUAL
+    "servo_angle": 0
+}
 
-# Start serial thread
-threading.Thread(target=read_serial_data, daemon=True).start()
-
-# === ROUTES ===
 @app.route('/')
 def index():
-    return send_from_directory('../frontend', 'index.html')
+    return send_from_directory(app.static_folder, 'index.html')
 
-@app.route('/<path:path>')
-def serve_static(path):
-    return send_from_directory('../frontend', path)
+@app.route('/api/update', methods=['POST'])
+def update_data():
+    data = request.get_json()
+    if data:
+        esp_data.update(data)
+        return jsonify({"status": "success", "message": "Data updated"})
+    return jsonify({"status": "error", "message": "No JSON data"}), 400
 
-@app.route('/api/data')
+@app.route('/api/data', methods=['GET'])
 def get_data():
-    return jsonify(serial_data)
+    return jsonify(esp_data)
 
-# === ENTRY POINT ===
+@app.route('/api/command', methods=['GET'])
+def get_command():
+    return jsonify(command_state)
+
+@app.route('/api/setcommand', methods=['POST'])
+def set_command():
+    data = request.get_json()
+    if data:
+        command_state.update(data)
+        return jsonify({"status": "success", "command": command_state})
+    return jsonify({"status": "error", "message": "No JSON data"}), 400
+
+@app.route('/<path:filename>')
+def serve_static(filename):
+    return send_from_directory(app.static_folder, filename)
+
 if __name__ == '__main__':
-    app.run(debug=False, host='0.0.0.0', port=5000)
+    port = int(os.environ.get('PORT', 5000))
+    app.run(host='0.0.0.0', port=port)
