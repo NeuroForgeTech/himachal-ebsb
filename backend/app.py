@@ -2,55 +2,35 @@ from flask import Flask, request, jsonify, send_from_directory
 from flask_cors import CORS
 import os
 
-app = Flask(__name__, static_folder='../frontend')
-CORS(app)  # Allow frontend JS to call API
+app = Flask(__name__, static_folder='../frontend', static_url_path='')
+CORS(app)
 
-# Store latest ESP32 data
-esp_data = {
-    "landslide": "Unknown",
-    "solar_voltage": 0.0,
-    "servo_angle": 0,
-    "timestamp": None
-}
-
-# Store dashboard control commands
-command_state = {
-    "ropeway_mode": "AUTO",  # Can be AUTO or MANUAL
-    "servo_angle": 0
+# Global state (simulate control state)
+esp32_status = {
+    'connected': False,
+    'tilt': 0,
+    'voltage': 0.0,
+    'servo_angle': 90,
+    'ropeway_mode': 'manual'
 }
 
 @app.route('/')
-def index():
+def serve_dashboard():
     return send_from_directory(app.static_folder, 'index.html')
 
 @app.route('/api/update', methods=['POST'])
 def update_data():
-    data = request.get_json()
-    if data:
-        esp_data.update(data)
-        return jsonify({"status": "success", "message": "Data updated"})
-    return jsonify({"status": "error", "message": "No JSON data"}), 400
+    data = request.json
+    esp32_status['connected'] = True
+    esp32_status['tilt'] = data.get('tilt', 0)
+    esp32_status['voltage'] = data.get('voltage', 0.0)
+    esp32_status['servo_angle'] = data.get('servo_angle', 90)
+    print(f"✅ Received ESP32 data: {data}")
+    return jsonify({'status': 'ok', 'message': 'Data updated successfully'})
 
-@app.route('/api/data', methods=['GET'])
-def get_data():
-    return jsonify(esp_data)
-
-@app.route('/api/command', methods=['GET'])
-def get_command():
-    return jsonify(command_state)
-
-@app.route('/api/setcommand', methods=['POST'])
-def set_command():
-    data = request.get_json()
-    if data:
-        command_state.update(data)
-        return jsonify({"status": "success", "command": command_state})
-    return jsonify({"status": "error", "message": "No JSON data"}), 400
-
-@app.route('/<path:filename>')
-def serve_static(filename):
-    return send_from_directory(app.static_folder, filename)
+@app.route('/api/status', methods=['GET'])
+def get_status():
+    return jsonify(esp32_status)
 
 if __name__ == '__main__':
-    port = int(os.environ.get('PORT', 5000))
-    app.run(host='0.0.0.0', port=port)
+    app.run(debug=True)
